@@ -1225,15 +1225,10 @@ message ContainerInfo {
   message DockerInfo {
     // The docker image that is going to be passed to the registry.
     required string image = 1;
-
-    // Network options.
-    enum Network {
-      HOST = 1;
-      BRIDGE = 2;
-      NONE = 3;
-    }
-
-    optional Network network = 2 [default = HOST];
+    // The docker network or --net parameter
+    optional string network = 2 [default = ""];
+    // The docker service to be published or --publish-service parameter
+    optional string publish_service = 3 [default = ""];
 
     message PortMapping {
       required uint32 host_port = 1;
@@ -1242,20 +1237,20 @@ message ContainerInfo {
       optional string protocol = 3;
     }
 
-    repeated PortMapping port_mappings = 3;
+    repeated PortMapping port_mappings = 4;
 
-    optional bool privileged = 4 [default = false];
+    optional bool privileged = 5 [default = false];
 
     // Allowing arbitrary parameters to be passed to docker CLI.
     // Note that anything passed to this field is not guaranteed
     // to be supported moving forward, as we might move away from
     // the docker CLI.
-    repeated Parameter parameters = 5;
+    repeated Parameter parameters = 6;
 
     // With this flag set to true, the docker containerizer will
     // pull the docker image from the registry even if the image
     // is already downloaded on the slave.
-    optional bool force_pull_image = 6;
+    optional bool force_pull_image = 7;
   }
 
   message Image {

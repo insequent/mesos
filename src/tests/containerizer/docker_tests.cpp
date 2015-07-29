@@ -260,7 +260,7 @@ TEST_F(DockerTest, ROOT_DOCKER_CheckPortResource)
 
   ContainerInfo::DockerInfo dockerInfo;
   dockerInfo.set_image("busybox");
-  dockerInfo.set_network(ContainerInfo::DockerInfo::BRIDGE);
+  dockerInfo.set_network("bridge");
 
   ContainerInfo::DockerInfo::PortMapping portMapping;
   portMapping.set_host_port(10000);

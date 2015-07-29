@@ -38,6 +38,8 @@
 #include "linux/cgroups.hpp"
 #endif // __linux__
 
+#include "logging/logging.hpp"
+
 #include "slave/containerizer/isolators/cgroups/cpushare.hpp"
 #include "slave/containerizer/isolators/cgroups/mem.hpp"
 
@@ -424,17 +426,26 @@ Future<Nothing> Docker::run(
 
   const string& image = dockerInfo.image();
 
-  argv.push_back("--net");
-  string network;
-  switch (dockerInfo.network()) {
-    case ContainerInfo::DockerInfo::HOST: network = "host"; break;
-    case ContainerInfo::DockerInfo::BRIDGE: network = "bridge"; break;
-    case ContainerInfo::DockerInfo::NONE: network = "none"; break;
-    default: return Failure("Unsupported Network mode: " +
-                            stringify(dockerInfo.network()));
+  if (!dockerInfo.publish_service().empty()) {
+    argv.push_back("--publish-service");
+    argv.push_back(dockerInfo.publish_service());
   }
 
-  argv.push_back(network);
+  string network;
+  if (!dockerInfo.network().empty()) {
+    argv.push_back("--net");
+    network = dockerInfo.network();
+    if (network == "HOST") {
+      network = "host";
+    } else if (network == "BRIDGE") {
+      network = "bridge";
+    } else if (network == "NONE") {
+      network = "none";
+    }
+    argv.push_back(network);
+  } else if (dockerInfo.publish_service().empty()) {
+      return Failure("Either Network or Publish-Service is required");
+  }
 
   if (containerInfo.has_hostname()) {
     if (network == "host") {
@@ -527,7 +538,7 @@ Future<Nothing> Docker::run(
 
   string cmd = strings::join(" ", argv);
 
-  VLOG(1) << "Running " << cmd;
+  LOG(INFO) << "Running " << cmd;
 
   map<string, string> environment = os::environment();
 

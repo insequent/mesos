@@ -586,7 +586,7 @@ TEST_F(DockerContainerizerTest, ROOT_DOCKER_Launch_Executor_Bridged)
   // TODO(tnachen): Use local image to test if possible.
   ContainerInfo::DockerInfo dockerInfo;
   dockerInfo.set_image("tnachen/test-executor");
-  dockerInfo.set_network(ContainerInfo::DockerInfo::BRIDGE);
+  dockerInfo.set_network("bridge");
 
   containerInfo.mutable_docker()->CopyFrom(dockerInfo);
   executorInfo.mutable_container()->CopyFrom(containerInfo);
