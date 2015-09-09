@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Runs style checker using Google's cpplint.
 # http://google-styleguide.googlecode.com/svn/trunk/cpplint/cpplint.py

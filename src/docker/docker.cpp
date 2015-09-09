@@ -33,6 +33,9 @@
 #include "common/status_utils.hpp"
 
 #include "docker/docker.hpp"
+#include "docker/calicoctl.hpp"
+
+#include "logging/logging.hpp"
 
 #ifdef __linux__
 #include "linux/cgroups.hpp"
@@ -49,6 +52,8 @@ using namespace mesos::internal::slave;
 
 using namespace process;
 
+using std::cout;
+using std::endl;
 using std::list;
 using std::map;
 using std::string;
@@ -567,17 +572,43 @@ Future<Nothing> Docker::run(
   return s.get().status()
     .then(lambda::bind(
         &Docker::_run,
+        name,
         lambda::_1))
     .onDiscard(lambda::bind(&commandDiscarded, s.get(), cmd));
 }
 
 
-Future<Nothing> Docker::_run(const Option<int>& status)
+Future<Nothing> Docker::_run(const string& containerName, const Option<int>& status)
 {
   if (status.isNone()) {
     return Failure("Failed to get exit status");
   } else if (status.get() != 0) {
     return Failure("Container exited on error: " + WSTRINGIFY(status.get()));
+  }
+
+  // RUBICON: This is presumed "success" point of docker run. Time to give it
+  //          and IP via calicoctl
+  const string default_profile = "net1";
+
+  // This try/catch train could use some serious help
+  // TODO: Fix these executors to use GLOG, and use LOG("WARNING") here.
+  try {
+    calicoctl::container(containerName, "add");
+  } catch (...) {
+    cout << "Calicoctl container add failed for container " << containerName << endl;
+  }
+
+  try {
+    calicoctl::profile("add", default_profile);
+  } catch (...) {
+    cout << "Calicoctl failed when adding profile " << default_profile << endl
+         << "This is likely due to the profile already existing." << endl;
+  }
+
+  try {
+    calicoctl::container(containerName, "set", default_profile);
+  } catch (...) {
+    cout << "Calicoctl failed to set the profile for " << containerName << endl;
   }
 
   return Nothing();
@@ -599,6 +630,15 @@ Future<Nothing> Docker::stop(
                " " + containerName;
 
   VLOG(1) << "Running " << cmd;
+
+  // RUBICON: We need to remove the container from Calico before the container
+  //          is removed (at least until calicoctl has more features)
+  try {
+    calicoctl::container(containerName, "remove");
+  } catch (...) {
+    // TODO: Fix logging to use INFO("WARNING") here
+    cout << "Calicoctl call failed during reaping of " << containerName << endl;
+  }
 
   Try<Subprocess> s = subprocess(
       cmd,

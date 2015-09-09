@@ -33,3 +33,6 @@ missing
 .deps/
 .libs/
 *-stamp
+
+# Vim
+**/*.sw[pon]

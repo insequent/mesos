@@ -155,6 +155,7 @@ protected:
 
 private:
   static process::Future<Nothing> _run(
+      const std::string& containerName,
       const Option<int>& status);
 
   static process::Future<Version> _version(
